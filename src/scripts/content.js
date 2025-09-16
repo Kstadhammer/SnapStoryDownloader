@@ -44,7 +44,7 @@ class SnapStoryDownloader {
 
   scanForMedia() {
     console.log("SnapStory: Starting media scan...");
-    
+
     // Look for ALL video elements (not just with src)
     const videos = document.querySelectorAll("video");
     videos.forEach((video) => {
@@ -53,7 +53,7 @@ class SnapStoryDownloader {
         this.mediaElements.add(video.src);
         console.log("Found video src:", video.src);
       }
-      
+
       // Check source elements within video
       const sources = video.querySelectorAll("source");
       sources.forEach((source) => {
@@ -62,7 +62,7 @@ class SnapStoryDownloader {
           console.log("Found video source:", source.src);
         }
       });
-      
+
       // Check currentSrc property
       if (video.currentSrc && !this.mediaElements.has(video.currentSrc)) {
         this.mediaElements.add(video.currentSrc);
@@ -89,7 +89,10 @@ class SnapStoryDownloader {
       const urlMatch = style.match(/url\(['"]?(.*?)['"]?\)/);
       if (urlMatch && urlMatch[1] && !this.mediaElements.has(urlMatch[1])) {
         this.mediaElements.add(urlMatch[1]);
-        console.log("Found background image:", urlMatch[1].substring(0, 100) + "...");
+        console.log(
+          "Found background image:",
+          urlMatch[1].substring(0, 100) + "..."
+        );
       }
     });
 
@@ -98,11 +101,14 @@ class SnapStoryDownloader {
     canvases.forEach((canvas, index) => {
       if (canvas.width > 100 && canvas.height > 100) {
         try {
-          const dataUrl = canvas.toDataURL('image/png');
+          const dataUrl = canvas.toDataURL("image/png");
           const canvasId = `canvas_${index}_${Date.now()}`;
           if (!this.mediaElements.has(canvasId)) {
             this.mediaElements.add(dataUrl);
-            console.log("Found canvas content:", canvas.width + "x" + canvas.height);
+            console.log(
+              "Found canvas content:",
+              canvas.width + "x" + canvas.height
+            );
           }
         } catch (e) {
           console.log("Cannot access canvas content (CORS):", e.message);
@@ -110,8 +116,10 @@ class SnapStoryDownloader {
       }
     });
 
-    console.log(`SnapStory: Scan complete. Found ${this.mediaElements.size} media items`);
-    
+    console.log(
+      `SnapStory: Scan complete. Found ${this.mediaElements.size} media items`
+    );
+
     // Update badge with count
     this.updateBadge();
   }
@@ -140,15 +148,38 @@ class SnapStoryDownloader {
   generateFilename(url, isVideo) {
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const extension = isVideo ? "mp4" : "jpg";
-    const urlParts = url.split("/");
-    const lastPart = urlParts[urlParts.length - 1];
-
-    // Try to extract meaningful name from URL
-    if (lastPart && lastPart.includes(".")) {
-      return `snapstory_${timestamp}_${lastPart}`;
+    
+    // Clean up URL for filename
+    let cleanName = "";
+    
+    if (url.startsWith("blob:") || url.startsWith("data:")) {
+      // For blob/data URLs, use timestamp + type
+      cleanName = `snapstory_${timestamp}`;
+    } else {
+      // For regular URLs, try to extract meaningful name
+      const urlParts = url.split("/");
+      const lastPart = urlParts[urlParts.length - 1];
+      
+      if (lastPart && lastPart.includes(".")) {
+        // Remove URL parameters and clean illegal characters
+        const cleanPart = lastPart
+          .split("?")[0]  // Remove query parameters
+          .split("#")[0]  // Remove fragment
+          .replace(/[<>:"/\\|?*]/g, "_")  // Replace illegal characters
+          .substring(0, 50);  // Limit length
+        
+        cleanName = `snapstory_${timestamp}_${cleanPart}`;
+      } else {
+        cleanName = `snapstory_${timestamp}`;
+      }
     }
 
-    return `snapstory_${timestamp}.${extension}`;
+    // Ensure we have a valid extension
+    if (!cleanName.includes(".")) {
+      cleanName += `.${extension}`;
+    }
+
+    return cleanName;
   }
 
   async downloadMedia(mediaItem) {

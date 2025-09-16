@@ -413,19 +413,19 @@ class SnapStoryPopup {
         active: true,
         currentWindow: true,
       });
-      
+
       // Force a rescan
       await browser.tabs.sendMessage(tabs[0].id, {
         action: "refreshScan",
       });
-      
+
       // Get the media list
       const response = await browser.tabs.sendMessage(tabs[0].id, {
         action: "getMediaList",
       });
-      
+
       console.log("Media detection test results:", response.media);
-      
+
       if (response.media && response.media.length > 0) {
         this.showStatusMessage(
           `Found ${response.media.length} media items. Check console for details.`,
