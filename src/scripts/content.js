@@ -117,14 +117,33 @@ class SnapStoryDownloader {
 
   downloadMedia(mediaItem) {
     return new Promise((resolve, reject) => {
+      console.log("SnapStory: Attempting to download:", mediaItem);
+
+      if (!mediaItem || !mediaItem.url) {
+        const error = "Invalid media item - no URL found";
+        console.error("SnapStory:", error);
+        reject(new Error(error));
+        return;
+      }
+
       browser.runtime
         .sendMessage({
           action: "download",
           url: mediaItem.url,
           filename: mediaItem.filename,
         })
-        .then(resolve)
-        .catch(reject);
+        .then((response) => {
+          console.log("SnapStory: Download response:", response);
+          if (response && response.success) {
+            resolve(response);
+          } else {
+            reject(new Error(response?.error || "Unknown download error"));
+          }
+        })
+        .catch((error) => {
+          console.error("SnapStory: Download failed:", error);
+          reject(error);
+        });
     });
   }
 
@@ -179,9 +198,9 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
 function injectScript() {
   const script = document.createElement("script");
   script.src = browser.runtime.getURL("src/scripts/injected.js");
-  script.onload = function () {
+  script.addEventListener('load', function() {
     this.remove();
-  };
+  });
   (document.head || document.documentElement).appendChild(script);
 }
 

@@ -36,6 +36,14 @@ class SnapStoryPopup {
       this.openSettings();
     });
 
+    // Debug button (if it exists)
+    const debugBtn = document.getElementById("debugBtn");
+    if (debugBtn) {
+      debugBtn.addEventListener("click", () => {
+        this.showDebugInfo();
+      });
+    }
+
     // Status message close button
     document.getElementById("statusClose").addEventListener("click", () => {
       this.hideStatusMessage();
@@ -246,7 +254,7 @@ class SnapStoryPopup {
           <div class="media-filename" title="${item.filename}">${item.filename}</div>
         </div>
         <div class="media-actions">
-          <button class="btn btn-secondary btn-small" onclick="snapStoryPopup.downloadSingle(${index})">
+          <button class="btn btn-secondary btn-small" data-index="${index}">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
               <polyline points="7,10 12,15 17,10"/>
@@ -259,6 +267,15 @@ class SnapStoryPopup {
     `
       )
       .join("");
+
+    // Add event listeners to download buttons (CSP-safe)
+    const downloadButtons = mediaItemsDiv.querySelectorAll('button[data-index]');
+    downloadButtons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        const index = parseInt(e.target.closest('button').getAttribute('data-index'));
+        this.downloadSingle(index);
+      });
+    });
   }
 
   async downloadSingle(index) {
@@ -302,6 +319,89 @@ class SnapStoryPopup {
   hideStatusMessage() {
     const statusMessage = document.getElementById("statusMessage");
     statusMessage.classList.remove("show");
+  }
+
+  async showDebugInfo() {
+    try {
+      const tabs = await browser.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
+      const currentTab = tabs[0];
+
+      let debugInfo = `🔍 Debug Information:\n\n`;
+      debugInfo += `📍 Current URL: ${currentTab.url}\n`;
+      debugInfo += `🌐 Is Snapchat: ${currentTab.url.includes(
+        "snapchat.com"
+      )}\n`;
+      debugInfo += `📊 Media Count: ${this.mediaCount}\n`;
+      debugInfo += `📋 Media List Length: ${this.mediaList.length}\n\n`;
+
+      if (this.mediaList.length > 0) {
+        debugInfo += `📁 Found Media:\n`;
+        this.mediaList.forEach((item, index) => {
+          debugInfo += `  ${index + 1}. ${item.type} - ${item.filename}\n`;
+          debugInfo += `     URL: ${item.url.substring(0, 60)}...\n`;
+        });
+      } else {
+        debugInfo += `❌ No media detected. Try:\n`;
+        debugInfo += `  1. Navigate to a Snapchat story\n`;
+        debugInfo += `  2. Click the Refresh button\n`;
+        debugInfo += `  3. Check browser console for errors\n`;
+      }
+
+      // Copy to clipboard and show alert
+      navigator.clipboard
+        .writeText(debugInfo)
+        .then(() => {
+          this.showStatusMessage("Debug info copied to clipboard!", "success");
+        })
+        .catch(() => {
+          // Fallback: show in alert
+          alert(debugInfo);
+        });
+
+      // Also log to console
+      console.log("SnapStory Debug Info:", {
+        currentUrl: currentTab.url,
+        mediaCount: this.mediaCount,
+        mediaList: this.mediaList,
+        isSnapchat: currentTab.url.includes("snapchat.com"),
+      });
+    } catch (error) {
+      console.error("Error getting debug info:", error);
+      this.showStatusMessage("Error getting debug info", "error");
+    }
+  }
+
+  async testDownload() {
+    try {
+      // Test download with a simple image
+      const testUrl =
+        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+      const testFilename = `test-download-${Date.now()}.png`;
+
+      const response = await browser.runtime.sendMessage({
+        action: "download",
+        url: testUrl,
+        filename: testFilename,
+      });
+
+      if (response.success) {
+        this.showStatusMessage(
+          "Test download successful! Check your downloads folder.",
+          "success"
+        );
+      } else {
+        this.showStatusMessage(
+          `Test download failed: ${response.error}`,
+          "error"
+        );
+      }
+    } catch (error) {
+      console.error("Test download error:", error);
+      this.showStatusMessage(`Test download error: ${error.message}`, "error");
+    }
   }
 
   openSettings() {

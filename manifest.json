@@ -4,7 +4,13 @@
   "version": "1.0.0",
   "description": "Download Snapchat stories as images or videos",
 
-  "permissions": ["activeTab", "downloads", "storage", "*://*.snapchat.com/*"],
+  "permissions": [
+    "activeTab",
+    "downloads",
+    "storage",
+    "notifications",
+    "*://*.snapchat.com/*"
+  ],
 
   "background": {
     "scripts": ["src/background/background.js"],
@@ -37,5 +43,7 @@
     "128": "icons/icon-128.png"
   },
 
-  "web_accessible_resources": ["src/scripts/injected.js"]
+  "web_accessible_resources": ["src/scripts/injected.js"],
+  
+  "content_security_policy": "script-src 'self'; object-src 'self'"
 }

@@ -77,6 +77,28 @@ function updateBadge(tabId, count) {
 // Handle file downloads
 async function handleDownload(url, filename) {
   try {
+    console.log("SnapStory Background: Download request received", {
+      url,
+      filename,
+    });
+
+    // Validate inputs
+    if (!url) {
+      throw new Error("No URL provided for download");
+    }
+    if (!filename) {
+      throw new Error("No filename provided for download");
+    }
+
+    // Check if URL is accessible
+    if (
+      !url.startsWith("http://") &&
+      !url.startsWith("https://") &&
+      !url.startsWith("blob:")
+    ) {
+      throw new Error(`Invalid URL format: ${url}`);
+    }
+
     // Get user settings
     const settings = await browser.storage.local.get([
       "downloadPath",
@@ -93,15 +115,27 @@ async function handleDownload(url, filename) {
       conflictAction: "uniquify", // Add number if file exists
     };
 
-    console.log("Starting download:", downloadOptions);
+    console.log(
+      "SnapStory Background: Starting download with options:",
+      downloadOptions
+    );
 
     // Start the download
     const downloadId = await browser.downloads.download(downloadOptions);
 
-    console.log("Download started with ID:", downloadId);
+    console.log(
+      "SnapStory Background: Download started successfully with ID:",
+      downloadId
+    );
     return downloadId;
   } catch (error) {
-    console.error("Download failed:", error);
+    console.error("SnapStory Background: Download failed:", error);
+    console.error("SnapStory Background: Error details:", {
+      message: error.message,
+      stack: error.stack,
+      url: url,
+      filename: filename,
+    });
     throw error;
   }
 }
