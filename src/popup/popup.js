@@ -269,10 +269,13 @@ class SnapStoryPopup {
       .join("");
 
     // Add event listeners to download buttons (CSP-safe)
-    const downloadButtons = mediaItemsDiv.querySelectorAll('button[data-index]');
-    downloadButtons.forEach(button => {
-      button.addEventListener('click', (e) => {
-        const index = parseInt(e.target.closest('button').getAttribute('data-index'));
+    const downloadButtons =
+      mediaItemsDiv.querySelectorAll("button[data-index]");
+    downloadButtons.forEach((button) => {
+      button.addEventListener("click", (e) => {
+        const index = parseInt(
+          e.target.closest("button").getAttribute("data-index")
+        );
         this.downloadSingle(index);
       });
     });

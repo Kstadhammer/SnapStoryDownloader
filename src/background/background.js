@@ -94,6 +94,7 @@ async function handleDownload(url, filename) {
     if (
       !url.startsWith("http://") &&
       !url.startsWith("https://") &&
+      !url.startsWith("data:") &&
       !url.startsWith("blob:")
     ) {
       throw new Error(`Invalid URL format: ${url}`);

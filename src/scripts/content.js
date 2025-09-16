@@ -115,10 +115,10 @@ class SnapStoryDownloader {
     return `snapstory_${timestamp}.${extension}`;
   }
 
-  downloadMedia(mediaItem) {
-    return new Promise((resolve, reject) => {
+  async downloadMedia(mediaItem) {
+    return new Promise(async (resolve, reject) => {
       console.log("SnapStory: Attempting to download:", mediaItem);
-
+      
       if (!mediaItem || !mediaItem.url) {
         const error = "Invalid media item - no URL found";
         console.error("SnapStory:", error);
@@ -126,10 +126,34 @@ class SnapStoryDownloader {
         return;
       }
 
+      let finalUrl = mediaItem.url;
+      
+      // Handle blob URLs by converting to data URL in content script context
+      if (mediaItem.url.startsWith("blob:")) {
+        try {
+          console.log("SnapStory: Converting blob URL to data URL");
+          const response = await fetch(mediaItem.url);
+          const blob = await response.blob();
+          
+          finalUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+          
+          console.log("SnapStory: Successfully converted blob to data URL");
+        } catch (blobError) {
+          console.error("SnapStory: Failed to convert blob URL:", blobError);
+          reject(new Error(`Cannot access blob URL: ${blobError.message}`));
+          return;
+        }
+      }
+
       browser.runtime
         .sendMessage({
           action: "download",
-          url: mediaItem.url,
+          url: finalUrl,
           filename: mediaItem.filename,
         })
         .then((response) => {
@@ -198,7 +222,7 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
 function injectScript() {
   const script = document.createElement("script");
   script.src = browser.runtime.getURL("src/scripts/injected.js");
-  script.addEventListener('load', function() {
+  script.addEventListener("load", function () {
     this.remove();
   });
   (document.head || document.documentElement).appendChild(script);
