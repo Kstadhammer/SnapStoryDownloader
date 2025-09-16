@@ -100,6 +100,36 @@ async function handleDownload(url, filename) {
       throw new Error(`Invalid URL format: ${url}`);
     }
 
+    // Special handling for data URLs
+    if (url.startsWith("data:")) {
+      console.log("SnapStory Background: Processing data URL");
+      
+      // Check data URL size (Firefox has limits)
+      if (url.length > 2 * 1024 * 1024) { // 2MB limit
+        console.warn("SnapStory Background: Data URL is very large, download might fail");
+      }
+      
+      // Ensure proper file extension based on data type
+      const dataTypeMatch = url.match(/data:([^;]+)/);
+      if (dataTypeMatch) {
+        const mimeType = dataTypeMatch[1];
+        console.log("SnapStory Background: Data URL mime type:", mimeType);
+        
+        // Adjust filename extension if needed
+        if (mimeType.includes('webp') && !filename.includes('.webp')) {
+          filename = filename.replace(/\.[^.]+$/, '.webp');
+        } else if (mimeType.includes('jpeg') && !filename.includes('.jpg')) {
+          filename = filename.replace(/\.[^.]+$/, '.jpg');
+        } else if (mimeType.includes('png') && !filename.includes('.png')) {
+          filename = filename.replace(/\.[^.]+$/, '.png');
+        } else if (mimeType.includes('mp4') && !filename.includes('.mp4')) {
+          filename = filename.replace(/\.[^.]+$/, '.mp4');
+        }
+        
+        console.log("SnapStory Background: Adjusted filename:", filename);
+      }
+    }
+
     // Get user settings
     const settings = await browser.storage.local.get([
       "downloadPath",

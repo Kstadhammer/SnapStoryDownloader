@@ -43,23 +43,40 @@ class SnapStoryDownloader {
   }
 
   scanForMedia() {
-    // Look for video elements
+    console.log("SnapStory: Starting media scan...");
+    
+    // Look for ALL video elements (not just with src)
     const videos = document.querySelectorAll("video");
     videos.forEach((video) => {
+      // Check src attribute
       if (video.src && !this.mediaElements.has(video.src)) {
         this.mediaElements.add(video.src);
-        console.log("Found video:", video.src);
+        console.log("Found video src:", video.src);
+      }
+      
+      // Check source elements within video
+      const sources = video.querySelectorAll("source");
+      sources.forEach((source) => {
+        if (source.src && !this.mediaElements.has(source.src)) {
+          this.mediaElements.add(source.src);
+          console.log("Found video source:", source.src);
+        }
+      });
+      
+      // Check currentSrc property
+      if (video.currentSrc && !this.mediaElements.has(video.currentSrc)) {
+        this.mediaElements.add(video.currentSrc);
+        console.log("Found video currentSrc:", video.currentSrc);
       }
     });
 
-    // Look for image elements that might be stories
-    const images = document.querySelectorAll(
-      'img[src*="snap"], img[src*="story"], img[src*="media"]'
-    );
+    // Look for ALL images (broader search)
+    const images = document.querySelectorAll("img");
     images.forEach((img) => {
-      if (img.src && !this.mediaElements.has(img.src)) {
+      if (img.src && img.src.length > 50 && !this.mediaElements.has(img.src)) {
+        // Only include images with longer URLs (likely media, not icons)
         this.mediaElements.add(img.src);
-        console.log("Found image:", img.src);
+        console.log("Found image:", img.src.substring(0, 100) + "...");
       }
     });
 
@@ -72,10 +89,29 @@ class SnapStoryDownloader {
       const urlMatch = style.match(/url\(['"]?(.*?)['"]?\)/);
       if (urlMatch && urlMatch[1] && !this.mediaElements.has(urlMatch[1])) {
         this.mediaElements.add(urlMatch[1]);
-        console.log("Found background image:", urlMatch[1]);
+        console.log("Found background image:", urlMatch[1].substring(0, 100) + "...");
       }
     });
 
+    // Look for canvas elements (Snapchat might use canvas)
+    const canvases = document.querySelectorAll("canvas");
+    canvases.forEach((canvas, index) => {
+      if (canvas.width > 100 && canvas.height > 100) {
+        try {
+          const dataUrl = canvas.toDataURL('image/png');
+          const canvasId = `canvas_${index}_${Date.now()}`;
+          if (!this.mediaElements.has(canvasId)) {
+            this.mediaElements.add(dataUrl);
+            console.log("Found canvas content:", canvas.width + "x" + canvas.height);
+          }
+        } catch (e) {
+          console.log("Cannot access canvas content (CORS):", e.message);
+        }
+      }
+    });
+
+    console.log(`SnapStory: Scan complete. Found ${this.mediaElements.size} media items`);
+    
     // Update badge with count
     this.updateBadge();
   }
@@ -118,7 +154,7 @@ class SnapStoryDownloader {
   async downloadMedia(mediaItem) {
     return new Promise(async (resolve, reject) => {
       console.log("SnapStory: Attempting to download:", mediaItem);
-      
+
       if (!mediaItem || !mediaItem.url) {
         const error = "Invalid media item - no URL found";
         console.error("SnapStory:", error);
@@ -127,21 +163,21 @@ class SnapStoryDownloader {
       }
 
       let finalUrl = mediaItem.url;
-      
+
       // Handle blob URLs by converting to data URL in content script context
       if (mediaItem.url.startsWith("blob:")) {
         try {
           console.log("SnapStory: Converting blob URL to data URL");
           const response = await fetch(mediaItem.url);
           const blob = await response.blob();
-          
+
           finalUrl = await new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => resolve(reader.result);
             reader.onerror = reject;
             reader.readAsDataURL(blob);
           });
-          
+
           console.log("SnapStory: Successfully converted blob to data URL");
         } catch (blobError) {
           console.error("SnapStory: Failed to convert blob URL:", blobError);

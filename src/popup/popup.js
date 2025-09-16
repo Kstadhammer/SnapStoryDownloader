@@ -407,6 +407,42 @@ class SnapStoryPopup {
     }
   }
 
+  async testMediaDetection() {
+    try {
+      const tabs = await browser.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
+      
+      // Force a rescan
+      await browser.tabs.sendMessage(tabs[0].id, {
+        action: "refreshScan",
+      });
+      
+      // Get the media list
+      const response = await browser.tabs.sendMessage(tabs[0].id, {
+        action: "getMediaList",
+      });
+      
+      console.log("Media detection test results:", response.media);
+      
+      if (response.media && response.media.length > 0) {
+        this.showStatusMessage(
+          `Found ${response.media.length} media items. Check console for details.`,
+          "success"
+        );
+      } else {
+        this.showStatusMessage(
+          "No media found. Make sure you're on a Snapchat story page.",
+          "warning"
+        );
+      }
+    } catch (error) {
+      console.error("Media detection test error:", error);
+      this.showStatusMessage(`Test error: ${error.message}`, "error");
+    }
+  }
+
   openSettings() {
     // For now, just show a message about settings
     this.showStatusMessage("Settings panel coming soon!", "warning");
