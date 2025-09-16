@@ -6,6 +6,8 @@ class SnapStoryPopup {
     this.mediaCount = 0;
     this.mediaList = [];
     this.isListVisible = false;
+    this.previewTooltip = null;
+    this.previewTimeout = null;
     this.init();
   }
 
@@ -13,6 +15,16 @@ class SnapStoryPopup {
     this.bindEvents();
     this.loadMediaCount();
     this.checkSnapchatTab();
+    this.initPreviewTooltip();
+  }
+
+  initPreviewTooltip() {
+    this.previewTooltip = document.getElementById("previewTooltip");
+    
+    // Hide tooltip when mouse leaves popup
+    document.addEventListener("mouseleave", () => {
+      this.hidePreview();
+    });
   }
 
   bindEvents() {
@@ -279,6 +291,22 @@ class SnapStoryPopup {
         this.downloadSingle(index);
       });
     });
+
+    // Add hover event listeners for preview
+    const mediaItems = mediaItemsDiv.querySelectorAll(".media-item");
+    mediaItems.forEach((item, index) => {
+      item.addEventListener("mouseenter", (e) => {
+        this.showPreview(e, this.mediaList[index]);
+      });
+      
+      item.addEventListener("mouseleave", () => {
+        this.hidePreview();
+      });
+      
+      item.addEventListener("mousemove", (e) => {
+        this.updatePreviewPosition(e);
+      });
+    });
   }
 
   async downloadSingle(index) {
@@ -440,6 +468,118 @@ class SnapStoryPopup {
     } catch (error) {
       console.error("Media detection test error:", error);
       this.showStatusMessage(`Test error: ${error.message}`, "error");
+    }
+  }
+
+  showPreview(event, mediaItem) {
+    if (!this.previewTooltip || !mediaItem) return;
+    
+    // Clear any existing timeout
+    if (this.previewTimeout) {
+      clearTimeout(this.previewTimeout);
+    }
+    
+    // Show loading state
+    this.previewTooltip.innerHTML = '<div class="preview-loading">Loading preview...</div>';
+    this.previewTooltip.classList.add("show");
+    this.updatePreviewPosition(event);
+    
+    // Delay preview loading slightly to avoid loading on quick hovers
+    this.previewTimeout = setTimeout(() => {
+      this.loadPreview(mediaItem);
+    }, 300);
+  }
+
+  hidePreview() {
+    if (!this.previewTooltip) return;
+    
+    // Clear timeout if preview hasn't loaded yet
+    if (this.previewTimeout) {
+      clearTimeout(this.previewTimeout);
+      this.previewTimeout = null;
+    }
+    
+    this.previewTooltip.classList.remove("show");
+    
+    // Clean up preview content after animation
+    setTimeout(() => {
+      if (!this.previewTooltip.classList.contains("show")) {
+        this.previewTooltip.innerHTML = '<div class="preview-loading">Loading preview...</div>';
+      }
+    }, 200);
+  }
+
+  updatePreviewPosition(event) {
+    if (!this.previewTooltip) return;
+    
+    const rect = event.target.getBoundingClientRect();
+    const popupRect = document.querySelector('.container').getBoundingClientRect();
+    
+    // Position tooltip to the right of the item
+    let left = rect.right + 10;
+    let top = rect.top;
+    
+    // Adjust if tooltip would go off-screen
+    if (left + 300 > window.innerWidth) {
+      left = rect.left - 310; // Show on left instead
+    }
+    
+    if (top + 300 > window.innerHeight) {
+      top = window.innerHeight - 310;
+    }
+    
+    this.previewTooltip.style.left = `${left}px`;
+    this.previewTooltip.style.top = `${top}px`;
+  }
+
+  async loadPreview(mediaItem) {
+    if (!this.previewTooltip) return;
+    
+    try {
+      if (mediaItem.type === 'video') {
+        const video = document.createElement('video');
+        video.autoplay = true;
+        video.muted = true;
+        video.loop = true;
+        video.src = mediaItem.url;
+        
+        const info = document.createElement('div');
+        info.className = 'preview-info';
+        info.textContent = `Video • ${mediaItem.filename}`;
+        
+        video.addEventListener('error', () => {
+          this.previewTooltip.innerHTML = '<div class="preview-error">Video preview not available</div>';
+        });
+        
+        this.previewTooltip.innerHTML = '';
+        this.previewTooltip.appendChild(video);
+        this.previewTooltip.appendChild(info);
+        
+      } else {
+        const img = document.createElement('img');
+        img.src = mediaItem.url;
+        img.alt = 'Preview';
+        
+        const info = document.createElement('div');
+        info.className = 'preview-info';
+        info.textContent = `Image • ${mediaItem.filename}`;
+        
+        img.addEventListener('error', () => {
+          this.previewTooltip.innerHTML = '<div class="preview-error">Image preview not available</div>';
+        });
+        
+        img.addEventListener('load', () => {
+          // Image loaded successfully, show info
+          this.previewTooltip.appendChild(info);
+        });
+        
+        this.previewTooltip.innerHTML = '';
+        this.previewTooltip.appendChild(img);
+      }
+      
+    } catch (error) {
+      console.error("Preview loading error:", error);
+      this.previewTooltip.innerHTML = '<div class="preview-error">Preview failed to load</div>';
     }
   }
 

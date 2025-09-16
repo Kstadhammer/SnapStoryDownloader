@@ -148,10 +148,10 @@ class SnapStoryDownloader {
   generateFilename(url, isVideo) {
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const extension = isVideo ? "mp4" : "jpg";
-    
+
     // Clean up URL for filename
     let cleanName = "";
-    
+
     if (url.startsWith("blob:") || url.startsWith("data:")) {
       // For blob/data URLs, use timestamp + type
       cleanName = `snapstory_${timestamp}`;
@@ -159,15 +159,15 @@ class SnapStoryDownloader {
       // For regular URLs, try to extract meaningful name
       const urlParts = url.split("/");
       const lastPart = urlParts[urlParts.length - 1];
-      
+
       if (lastPart && lastPart.includes(".")) {
         // Remove URL parameters and clean illegal characters
         const cleanPart = lastPart
-          .split("?")[0]  // Remove query parameters
-          .split("#")[0]  // Remove fragment
-          .replace(/[<>:"/\\|?*]/g, "_")  // Replace illegal characters
-          .substring(0, 50);  // Limit length
-        
+          .split("?")[0] // Remove query parameters
+          .split("#")[0] // Remove fragment
+          .replace(/[<>:"/\\|?*]/g, "_") // Replace illegal characters
+          .substring(0, 50); // Limit length
+
         cleanName = `snapstory_${timestamp}_${cleanPart}`;
       } else {
         cleanName = `snapstory_${timestamp}`;

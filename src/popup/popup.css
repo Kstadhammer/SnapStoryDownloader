@@ -340,6 +340,83 @@ body {
   background: #a8a8a8;
 }
 
+/* Preview Tooltip */
+.preview-tooltip {
+  position: absolute;
+  z-index: 1000;
+  background: #fff;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  padding: 8px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.2s ease;
+  max-width: 300px;
+  max-height: 300px;
+}
+
+.preview-tooltip.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.preview-tooltip img,
+.preview-tooltip video {
+  max-width: 280px;
+  max-height: 280px;
+  border-radius: 4px;
+  display: block;
+}
+
+.preview-tooltip video {
+  background: #000;
+}
+
+.preview-tooltip .preview-info {
+  padding: 8px 0 4px 0;
+  font-size: 11px;
+  color: #6c757d;
+  text-align: center;
+}
+
+.preview-tooltip .preview-error {
+  padding: 20px;
+  text-align: center;
+  color: #dc3545;
+  font-size: 12px;
+}
+
+.preview-tooltip .preview-loading {
+  padding: 20px;
+  text-align: center;
+  color: #6c757d;
+  font-size: 12px;
+}
+
+.preview-tooltip .preview-loading::after {
+  content: "";
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-left: 8px;
+  border: 2px solid #e9ecef;
+  border-top: 2px solid #6c757d;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Media item hover effect */
+.media-item:hover {
+  background: #f8f9fa;
+  cursor: pointer;
+}
+
+.media-item:hover .media-filename {
+  color: #495057;
+}
+
 /* Responsive adjustments */
 @media (max-width: 400px) {
   .container {
@@ -350,5 +427,16 @@ body {
 
   .main {
     padding: 16px;
+  }
+
+  .preview-tooltip {
+    max-width: 250px;
+    max-height: 250px;
+  }
+
+  .preview-tooltip img,
+  .preview-tooltip video {
+    max-width: 230px;
+    max-height: 230px;
   }
 }

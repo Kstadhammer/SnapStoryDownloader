@@ -135,11 +135,11 @@ async function handleDownload(url, filename) {
 
     // Final filename cleanup to ensure no illegal characters
     filename = filename
-      .replace(/[<>:"/\\|?*]/g, "_")  // Replace illegal characters
-      .replace(/[&=]/g, "_")         // Replace URL parameter characters
-      .replace(/_{2,}/g, "_")        // Replace multiple underscores with single
-      .substring(0, 100);            // Limit total length
-    
+      .replace(/[<>:"/\\|?*]/g, "_") // Replace illegal characters
+      .replace(/[&=]/g, "_") // Replace URL parameter characters
+      .replace(/_{2,}/g, "_") // Replace multiple underscores with single
+      .substring(0, 100); // Limit total length
+
     console.log("SnapStory Background: Final cleaned filename:", filename);
 
     // Get user settings
